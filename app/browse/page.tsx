@@ -112,7 +112,8 @@ export default function BrowsePage() {
               />
             </svg>
             <input
-              className="input pl-10"
+              className="input"
+              style={{ paddingLeft: "2.5rem" }}
               type="text"
               placeholder="Search by question or round ID..."
               value={search}

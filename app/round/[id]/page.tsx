@@ -351,13 +351,50 @@ function FinishedView({
     )
     .join("\n")}\n\nPlay at ${getRoundUrl(round.id)}`;
 
-  function handleShare() {
-    if (navigator.share) {
-      navigator.share({ text: shareText });
-    } else {
-      navigator.clipboard.writeText(shareText);
+  const [shared, setShared] = useState(false);
+  const [sharing, setSharing] = useState(false);
+
+  async function handleShare() {
+    if (sharing) return;
+    setSharing(true);
+    try {
+      // Try native share on mobile, fall back to clipboard
+      if (typeof navigator.share === "function") {
+        await navigator.share({ text: shareText });
+        setShared(true);
+      } else {
+        await navigator.clipboard.writeText(shareText);
+        setShared(true);
+      }
+    } catch {
+      // If both fail (permissions, cancelled, etc.), use textarea fallback
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = shareText;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        setShared(true);
+      } catch {
+        // Truly failed
+      }
+    } finally {
+      setSharing(false);
+      if (shared) {
+        setTimeout(() => setShared(false), 2000);
+      }
     }
   }
+
+  // Reset shared state after it's set
+  useEffect(() => {
+    if (!shared) return;
+    const t = setTimeout(() => setShared(false), 2000);
+    return () => clearTimeout(t);
+  }, [shared]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -467,8 +504,16 @@ function FinishedView({
             <Link href="/create" className="btn-primary text-center flex-1">
               Start Another Round
             </Link>
-            <button onClick={handleShare} className="btn-secondary flex-1">
-              Share Results
+            <button
+              onClick={handleShare}
+              disabled={sharing}
+              className="btn-secondary flex-1"
+            >
+              {shared
+                ? "Copied to clipboard!"
+                : sharing
+                  ? "Sharing..."
+                  : "Share Results"}
             </button>
             <button onClick={copyLink} className="btn-secondary flex-1">
               {copied ? "Copied!" : "Copy Link"}
