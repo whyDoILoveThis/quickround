@@ -1,4 +1,4 @@
-import { db } from "./firebase";
+import { getDb } from "./firebase";
 import {
   ref,
   set,
@@ -13,11 +13,11 @@ import type { Round, Player } from "./types";
 // ── Round CRUD ──────────────────────────────────────────
 
 export async function createRound(round: Round): Promise<void> {
-  await set(ref(db, `rounds/${round.id}`), round);
+  await set(ref(getDb(), `rounds/${round.id}`), round);
 }
 
 export async function getRound(id: string): Promise<Round | null> {
-  const snap = await get(ref(db, `rounds/${id}`));
+  const snap = await get(ref(getDb(), `rounds/${id}`));
   return snap.exists() ? (snap.val() as Round) : null;
 }
 
@@ -25,7 +25,7 @@ export async function updateRound(
   id: string,
   data: Partial<Round>
 ): Promise<void> {
-  await update(ref(db, `rounds/${id}`), data);
+  await update(ref(getDb(), `rounds/${id}`), data);
 }
 
 // ── Players ─────────────────────────────────────────────
@@ -34,14 +34,14 @@ export async function addPlayer(
   roundId: string,
   player: Player
 ): Promise<void> {
-  await set(ref(db, `rounds/${roundId}/players/${player.name}`), player);
+  await set(ref(getDb(), `rounds/${roundId}/players/${player.name}`), player);
 }
 
 export async function playerExists(
   roundId: string,
   name: string
 ): Promise<boolean> {
-  const snap = await get(ref(db, `rounds/${roundId}/players/${name}`));
+  const snap = await get(ref(getDb(), `rounds/${roundId}/players/${name}`));
   return snap.exists();
 }
 
@@ -51,7 +51,7 @@ export function subscribeToRound(
   id: string,
   callback: (round: Round | null) => void
 ): () => void {
-  const roundRef = ref(db, `rounds/${id}`);
+  const roundRef = ref(getDb(), `rounds/${id}`);
   const handler = onValue(roundRef, (snap) => {
     callback(snap.exists() ? (snap.val() as Round) : null);
   });
@@ -61,7 +61,7 @@ export function subscribeToRound(
 export function subscribeToAllRounds(
   callback: (rounds: Round[]) => void
 ): () => void {
-  const roundsRef = ref(db, "rounds");
+  const roundsRef = ref(getDb(), "rounds");
   const handler = onValue(roundsRef, (snap) => {
     if (!snap.exists()) {
       callback([]);
@@ -81,7 +81,7 @@ export async function logAnalytics(data: {
   isAI: boolean;
   timestamp: number;
 }): Promise<void> {
-  const analyticsRef = ref(db, "analytics");
+  const analyticsRef = ref(getDb(), "analytics");
   const newRef = push(analyticsRef);
   await set(newRef, data);
 }
